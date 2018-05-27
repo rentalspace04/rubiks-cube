@@ -9,12 +9,54 @@ class CubeTurn(enum.Enum):
     B = 4
     U = 5
     D = 6
+    x = 7
+    y = 8
+    z = 9
 
 class CubeMove:
     """ Represents a move """
     def __init__(self, turn, turns=1):
         self.turn = turn
         self.turns = turns
+    
+    @classmethod
+    def parse(cls, move_string):
+        n = 1
+        if len(move_string) == 2:
+            n_char = move_string[1]
+            if n_char == "'":
+                n = 3
+            elif n_char == "2":
+                n = 2
+            else:
+                raise ValueError(
+                    "Invalid move '{}'. Invalid specifier '{}'".format(move_string, n_char))
+        elif len(move_string) > 2:
+            raise ValueError(
+                "Invalid move '{}'. Move should be at most 2 characters long.".format(
+                    move_string))
+        turn_name = move_string[0]
+        if turn_name == "F":
+            turn = CubeTurn.F
+        elif turn_name == "R":
+            turn = CubeTurn.R
+        elif turn_name == "L":
+            turn = CubeTurn.L
+        elif turn_name == "U":
+            turn = CubeTurn.U
+        elif turn_name == "D":
+            turn = CubeTurn.D
+        elif turn_name == "B":
+            turn = CubeTurn.B
+        elif turn_name == "x":
+            turn = CubeTurn.x
+        elif turn_name == "y":
+            turn = CubeTurn.y
+        elif turn_name == "z":
+            turn = CubeTurn.z
+        else:
+            raise ValueError("Invalid move '{}'. Unknown turn '{}'.".format(move_string, turn_name))
+        return cls(turn, n)
 
 class SquareColor(enum.Enum):
     WHITE = 1
@@ -115,9 +157,28 @@ class Cube:
         self.left = Face.from_color(SquareColor.BLUE)
         self.right = Face.from_color(SquareColor.GREEN)
 
-    def make_move(self, move_name):
-        """ Given a string representing a move, make the move """
-        pass
+    def make_move(self, move):
+        """ Given a move, make it """
+        turn = move.turn
+        for _ in range(move.turns):
+            if turn == CubeTurn.R:
+                self.move_r()
+            elif turn == CubeTurn.L:
+                self.move_l()
+            elif turn == CubeTurn.F:
+                self.move_f()
+            elif turn == CubeTurn.B:
+                self.move_b()
+            elif turn == CubeTurn.U:
+                self.move_u()
+            elif turn == CubeTurn.D:
+                self.move_d()
+            elif turn == CubeTurn.x:
+                self.rotate_x()
+            elif turn == CubeTurn.y:
+                self.rotate_y()
+            elif turn == CubeTurn.z:
+                self.rotate_z()
 
     @staticmethod
     def perform_move(side, faces, indices):
@@ -151,15 +212,17 @@ class Cube:
 
     def move_u(self):
         """ Makes an 'U' move """
-        faces = [self.front, self.left, self.back, self.right]
+        faces = [i.squares for i in [self.front, self.left, self.back, self.right]]
         indices = [0, 1, 2]
-        Cube.perform_move(self.top, faces, indices)
+        self.top.rotate()
+        rotate_on_faces(faces, indices)
 
     def move_d(self):
         """ Makes an 'D' move """
-        faces = [self.front, self.right, self.back, self.left]
+        faces = [i.squares for i in [self.front, self.right, self.back, self.left]]
         indices = [6, 7, 8]
-        Cube.perform_move(self.bottom, faces, indices)
+        self.bottom.rotate()
+        rotate_on_faces(faces, indices)
 
     def move_f(self):
         """ Makes an 'F' move """
@@ -235,9 +298,9 @@ Bottom:{nl}{4}{nl}Back:{nl}{5}{nl}".format(
         )
 
 if __name__ == "__main__":
+    moves = "F R U' R2"
     c = Cube()
-    c.move_r()
-    c.move_f()
-    c.move_u()
-    c.rotate_z()
+    for move_string in moves.split():
+        move = CubeMove.parse(move_string)
+        c.make_move(move)
     print(c)
