@@ -33,7 +33,15 @@ def rotate_indices(array, indices):
         old = next_old
     array[first] = old
 
-def face_rotations(faces, indices):
+def rotate_faces(faces):
+    old = faces[0].squares
+    for face in faces[1:]:
+        next_old = face.squares
+        face.squares = old
+        old = next_old
+    faces[0] = old
+
+def rotate_on_faces(faces, indices):
     for i in indices:
         first_face = faces[0]
         old = first_face[i]
@@ -57,25 +65,33 @@ def hard_face_rotations(faces, indices_list):
 
 class Face:
     """ Represents a single face of a Rubik's cube """
-    def __init__(self, color):
-        self.squares = [color for i in range(9)]
+    def __init__(self, squares):
+        self.squares = squares
     
-    def rotate(self):
+    def rotate(self, n=1):
         """ Performs a 90 deg clockwise rotation of the face """
         # perform on copy of state, so isn't ruined if error occurs
         squares = self.squares.copy()
-        # perform the rotation
-        corners = [0, 2, 8, 6]
-        edges = [1, 5, 7, 3]
-        rotate_indices(squares, corners)
-        rotate_indices(squares, edges)
-        # set the new state
-        self.squares = squares
+        for _ in range(n):
+            # perform the rotation
+            corners = [0, 2, 8, 6]
+            edges = [1, 5, 7, 3]
+            rotate_indices(squares, corners)
+            rotate_indices(squares, edges)
+            # set the new state
+            self.squares = squares
 
     def __str__(self):
         """ String representation of cube """
         return "{0} {1} {2}{nl}{3} {4} {5}{nl}{6} {7} {8}".format(*self.squares, nl=os.linesep)
 
+    def copy(self):
+        return Face(self.squares.copy())
+
+    @classmethod
+    def from_color(cls, color):
+        squares = [color for i in range(9)]
+        return cls(squares)
 #
 #                 0 1 2
 #                 3 U 5
@@ -92,12 +108,12 @@ class Face:
 class Cube:
     """ The Rubik's cube model """
     def __init__(self):
-        self.top = Face(SquareColor.YELLOW)
-        self.bottom = Face(SquareColor.WHITE)
-        self.front = Face(SquareColor.RED)
-        self.back = Face(SquareColor.ORANGE)
-        self.left = Face(SquareColor.BLUE)
-        self.right = Face(SquareColor.GREEN)
+        self.top = Face.from_color(SquareColor.YELLOW)
+        self.bottom = Face.from_color(SquareColor.WHITE)
+        self.front = Face.from_color(SquareColor.RED)
+        self.back = Face.from_color(SquareColor.ORANGE)
+        self.left = Face.from_color(SquareColor.BLUE)
+        self.right = Face.from_color(SquareColor.GREEN)
 
     def make_move(self, move_name):
         """ Given a string representing a move, make the move """
@@ -107,7 +123,7 @@ class Cube:
     def perform_move(side, faces, indices):
         side.rotate()
         faces = [i.squares for i in faces]
-        face_rotations(faces, indices)
+        rotate_on_faces(faces, indices)
     
     def move_r(self):
         """ Makes an 'R' move """
@@ -175,15 +191,40 @@ class Cube:
 
     def rotate_x(self):
         """ Performs an 'x' rotation """
-        pass
+        self.right.rotate()
+        self.left.rotate(3)
+        new_top = self.front.copy()
+        self.front = self.bottom.copy()
+        self.bottom = self.back.copy()
+        self.bottom.rotate(2)
+        self.back = self.top.copy()
+        self.back.rotate(2)
+        self.top = new_top
     
     def rotate_y(self):
         """ Performs an 'y' rotation """
-        pass
+        self.top.rotate()
+        self.bottom.rotate(3)
+        new_left = self.front.copy()
+        self.front = self.right.copy()
+        self.right = self.back.copy()
+        self.back = self.left.copy()
+        self.left = new_left
+
 
     def rotate_z(self):
         """ Performs an 'z' rotation """
-        pass
+        self.front.rotate()
+        self.back.rotate(3)
+        new_right = self.top.copy()
+        self.top = self.left.copy()
+        self.top.rotate()
+        self.left = self.bottom.copy()
+        self.left.rotate()
+        self.bottom = self.right.copy()
+        self.bottom.rotate()
+        self.right = new_right
+        self.right.rotate()
     
     def __str__(self):
         """ String representation of cube """
@@ -195,12 +236,8 @@ Bottom:{nl}{4}{nl}Back:{nl}{5}{nl}".format(
 
 if __name__ == "__main__":
     c = Cube()
-    c.move_u()
-    c.move_b()
-    c.move_l()
-    c.move_f()
-    c.move_d()
     c.move_r()
-    c.move_b()
+    c.move_f()
     c.move_u()
+    c.rotate_z()
     print(c)
