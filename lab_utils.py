@@ -2,7 +2,7 @@
 import sys
 import math
 from ctypes import sizeof, c_float, c_void_p, c_uint, string_at
-from OpenGL.GL import * #pylint: disable=unused-wildcard-import,wildcard-import
+from OpenGL.GL import *  #pylint: disable=unused-wildcard-import,wildcard-import
 import numpy as np
 import imgui
 
