@@ -1,20 +1,22 @@
-from OpenGL.GL import *
-import numpy as np
+#pragma pylint: disable=fixme,line-too-long,missing-docstring,invalid-name,no-member,dangerous-default-value,protected-access,unused-import,assignment-from-no-return,redefined-outer-name
+import sys
 import math
 from ctypes import sizeof, c_float, c_void_p, c_uint, string_at
+from OpenGL.GL import * #pylint: disable=unused-wildcard-import,wildcard-import
+import numpy as np
 import imgui
 
 
 def vec2(x, y=None):
-    if y == None:
+    if y is None:
         return np.array([x, x], dtype=np.float32)
     return np.array([x, y], dtype=np.float32)
 
 
 def vec3(x, y=None, z=None):
-    if y == None:
+    if y is None:
         return np.array([x, x, x], dtype=np.float32)
-    if z == None:
+    if z is None:
         return np.array([x, y, y], dtype=np.float32)
     return np.array([x, y, z], dtype=np.float32)
 
@@ -101,10 +103,6 @@ class Mat3:
 #
 # matrix consruction functions
 #
-
-
-def make_translation(x, y, z):
-    return Mat4([[1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1]])
 
 
 def make_translation(x, y, z):
