@@ -1,30 +1,39 @@
+""" Renders the program """
 import sys
 import math
-from OpenGL.GL import *
-import imgui
-import glfw
-from imgui.integrations.glfw import GlfwRenderer as ImGuiGlfwRenderer
 from ctypes import sizeof, c_float, c_void_p, c_uint, string_at
+
+from OpenGL.GL import *  #pylint: disable=unused-wildcard-import
+import glfw
+import imgui
+from imgui.integrations.glfw import GlfwRenderer as ImGuiGlfwRenderer
 from PIL import Image
 
 import lab_utils as lu
 from cube import Cube, CubeMove
 
-def initResources():
+
+def init_resources():
+    """ Initialises the program's resources """
     pass
 
-def drawUi(width, height):
+
+def draw_ui(width, height):
+    """ Draws the imgui UI """
     pass
 
-def renderFrame(width, height):
+
+def render_frame(width, height):
+    """ Renders the frame """
     # Make openGL use transform from screen space to NDC
     glViewport(0, 0, width, height)
-    # Set the clear colour (i.e. background colour) 
+    # Set the clear colour (i.e. background colour)
     glClearColor(0.6, 0.7, 1.0, 1.0)
     # Clear the colour and depth buffers
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
 
-def initGlFwAndResources(title, startWidth, startHeight, initResources):
+
+def init_glfw_and_resources(title, start_width, start_height):
     """ Adapted from lab5 `magic.py` """
     global g_mousePos
 
@@ -34,16 +43,20 @@ def initGlFwAndResources(title, startWidth, startHeight, initResources):
     glfw.window_hint(glfw.SRGB_CAPABLE, 1)
     glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, GL_TRUE)
 
-
-    window = glfw.create_window(startWidth, startHeight, title, None, None)
+    window = glfw.create_window(start_width, start_height, title, None, None)
     if not window:
         glfw.terminate()
         sys.exit(1)
 
     glfw.make_context_current(window)
 
-
-    print("--------------------------------------\nOpenGL\n  Vendor: %s\n  Renderer: %s\n  Version: %s\n--------------------------------------\n" % (glGetString(GL_VENDOR).decode("utf8"), glGetString(GL_RENDERER).decode("utf8"), glGetString(GL_VERSION).decode("utf8")), flush=True)
+    print(
+        ("--------------------------------------\nOpenGL\n  Vendor: {}\n" +
+        "  Renderer: {}\n  Version: {}\n--------------------------------------\n").format(
+            glGetString(GL_VENDOR).decode("utf8"),
+            glGetString(GL_RENDERER).decode("utf8"),
+            glGetString(GL_VERSION).decode("utf8")),
+        flush=True)
 
     impl = ImGuiGlfwRenderer(window)
 
@@ -62,26 +75,26 @@ def initGlFwAndResources(title, startWidth, startHeight, initResources):
     glDepthFunc(GL_LEQUAL)
     #glEnable(GL_DEPTH_CLAMP)
 
-    if initResources:
-        initResources()
+    init_resources()
 
-    return window,impl
+    return window, impl
 
-def runProgram(title, startWidth, startHeight, renderFrame, initResources = None, drawUi = None, update = None):
+
+def run_program(title, start_width, start_height, update=None):
     """ Adapted from lab5 `magic.py` """
     # Initialise GLFW
     if not glfw.init():
         sys.exit(1)
-    window, impl = initGlFwAndResources(title, startWidth, startHeight, initResources)
-    
+    window, impl = init_glfw_and_resources(title, start_width, start_height)
+
     # Add in initial time/mouse pos
-    currentTime = glfw.get_time()
-    prevMouseX,prevMouseY = glfw.get_cursor_pos(window)
+    current_time = glfw.get_time()
+    prev_mouse_x, prev_mouse_y = glfw.get_cursor_pos(window)
 
     while not glfw.window_should_close(window):
-        prevTime = currentTime
-        currentTime = glfw.get_time()
-        dt = currentTime - prevTime
+        prev_time = current_time
+        current_time = glfw.get_time()
+        dt = current_time - prev_time
 
         width, height = glfw.get_framebuffer_size(window)
 
@@ -91,11 +104,10 @@ def runProgram(title, startWidth, startHeight, renderFrame, initResources = None
         #imgui.set_next_window_size(400.0, 620.0, imgui.FIRST_USE_EVER)
         imgui.begin("UI", 0)
 
-        if drawUi:
-            drawUi(width, height)
+        draw_ui(width, height)
 
-        renderFrame(width, height)
-    
+        render_frame(width, height)
+
         #mgui.show_test_window()
 
         imgui.end()
@@ -109,6 +121,5 @@ def runProgram(title, startWidth, startHeight, renderFrame, initResources = None
         impl.process_inputs()
 
 
-
 if __name__ == "__main__":
-    runProgram("Rubik's Cube", 640, 640, renderFrame, initResources, drawUi)
+    run_program("Rubik's Cube", 640, 640)
