@@ -24,17 +24,36 @@ g_shader_reload_timeout = 1.0
 g_shader = None
 g_vertex_array = None
 g_coordinateSystemModel = None
+g_cube = Cube()
+g_squares = []
+g_square_colors = []
+g_cube_move = 0
 
 
-def make_vertices():
+def make_squares():
     """ Makes the vertices to draw """
-    cube = Cube()
-    cr = CubeRenderer(cube)
-    return cr.get_squares()
-
-
-vertices = make_vertices()
-print(vertices)
+    global g_cube
+    global g_squares
+    global g_square_colors
+    global g_vertex_array
+    # Prepare the Squares with the cube renderer
+    cube_renderer = CubeRenderer(g_cube)
+    g_squares = cube_renderer.get_squares()
+    g_square_colors = cube_renderer.get_colors()
+    # Prepare the VAO and VBO
+    g_vertex_array = glGenVertexArrays(1)
+    glBindVertexArray(g_vertex_array)
+    position_buffer = glGenBuffers(1)
+    # Prepare and upload the data
+    flat_data = lu.flatten(g_squares)
+    data_buffer = (c_float * len(flat_data))(*flat_data)
+    glBindBuffer(GL_ARRAY_BUFFER, position_buffer)
+    glBufferData(GL_ARRAY_BUFFER, data_buffer, GL_STATIC_DRAW)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(0)
+    # Unbind the buffers
+    glBindBuffer(GL_ARRAY_BUFFER, 0)
+    glBindVertexArray(0)
 
 
 def draw_ui(width, height):
@@ -45,20 +64,25 @@ def draw_ui(width, height):
 def render_frame(width, height):
     """ Renders the frame """
     global g_shader
+    global g_squares
+    global g_square_colors
     # Make the camera position
     eye_pos = [5, 5, 5]
     look_at = [1.5, 1.5, -1.5]
     up_dir = [0, 1, 0]
-    world_to_view = lu.make_lookAt(eye_pos, look_at, up_dir)
     y_fov = 45
-    view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 50)
 
+    world_to_view = lu.make_lookAt(eye_pos, look_at, up_dir)
+    view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 50)
     world_to_clip = view_to_clip * world_to_view
 
     # Make openGL use transform from screen space to NDC
     glViewport(0, 0, width, height)
     # Set the clear colour (i.e. background colour)
-    glClearColor(0.6, 0.7, 1.0, 1.0)
+    glClearColor(0.7, 0.8, 1.0, 1.0)
+
+    make_squares()
+
     # Clear the colour and depth buffers
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
     tfm_uniform_index = glGetUniformLocation(g_shader, "worldToClipTfm")
@@ -66,7 +90,8 @@ def render_frame(width, height):
     glUniformMatrix4fv(tfm_uniform_index, 1, GL_TRUE, world_to_clip.getData())
     glBindVertexArray(g_vertex_array)
 
-    for i in range(int(len(vertices) / 4)):
+    for i in range(int(len(g_squares) / 4)):
+        lu.setUniform(g_shader, "squareColorIndex", g_square_colors[i])
         glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4)
 
     magic.drawCoordinateSystem(view_to_clip, world_to_view)
@@ -74,23 +99,6 @@ def render_frame(width, height):
 
 def init_resources():
     """ Initialises the program's resources """
-    global g_vertex_array
-    global vertices
-    # Prepare the VAO and VBO
-    g_vertex_array = glGenVertexArrays(1)
-    glBindVertexArray(g_vertex_array)
-    position_buffer = glGenBuffers(1)
-    # Prepare and upload the data
-    flat_data = lu.flatten(vertices)
-    data_buffer = (c_float * len(flat_data))(*flat_data)
-    glBindBuffer(GL_ARRAY_BUFFER, position_buffer)
-    glBufferData(GL_ARRAY_BUFFER, data_buffer, GL_STATIC_DRAW)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
-    glEnableVertexAttribArray(0)
-    # Unbind the buffers
-    glBindBuffer(GL_ARRAY_BUFFER, 0)
-    glBindVertexArray(0)
-
     reload_shader()
 
 
@@ -185,10 +193,28 @@ def run_program(title, start_width, start_height):
 
 def update(dt):
     global g_shader_reload_timeout
+    global g_cube
+    global g_cube_move
     g_shader_reload_timeout -= dt
     if g_shader_reload_timeout <= 0:
-        g_shader_reload_timeout = 1.0
+        g_shader_reload_timeout = 5.0
         reload_shader()
+        if g_cube_move == 0:
+            g_cube.move_r()
+            g_cube_move = 1
+        elif g_cube_move == 1:
+            g_cube.move_u()
+            g_cube_move = 2
+        elif g_cube_move == 2:
+            g_cube.move_r()
+            g_cube.move_r()
+            g_cube.move_r()
+            g_cube_move = 3
+        elif g_cube_move == 3:
+            g_cube.move_u()
+            g_cube.move_u()
+            g_cube.move_u()
+            g_cube_move = 0
 
 
 def reload_shader():

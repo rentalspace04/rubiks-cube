@@ -93,6 +93,7 @@ def rotate_indices(array, indices):
         old = next_old
     array[first] = old
 
+
 def rotate_on_faces(faces, indices):
     """
     Rotates a set of indices across a set of faces.
@@ -324,7 +325,7 @@ class Cube:
 
 def main():
     """ Entry point """
-    moves = "F R U' R2"
+    moves = "U D"
     cube = Cube()
     for move_string in moves.split():
         move_to_make = CubeMove.parse(move_string)
