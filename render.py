@@ -11,8 +11,11 @@ from PIL import Image
 
 import lab_utils as lu
 from cube import Cube, CubeMove
-from lab_utils import Mat3
+from cuberender import CubeRenderer
+
 import magic
+
+import cuberender as cr
 
 # Global variables
 g_vert_shader_source = ""
@@ -22,8 +25,16 @@ g_shader = None
 g_vertex_array = None
 g_coordinateSystemModel = None
 
-vertices = [[0, 0, 0], [0, 3, 0], [3, 3, 0], [3, 0, 0], [0, 3, 0], [0, 3, -3],
-            [3, 3, -3], [3, 3, 0], [3, 0, 0], [3, 0, -3], [3, 3, -3], [3, 3, 0]]
+
+def make_vertices():
+    """ Makes the vertices to draw """
+    cube = Cube()
+    cr = CubeRenderer(cube)
+    return cr.get_squares()
+
+
+vertices = make_vertices()
+print(vertices)
 
 
 def draw_ui(width, height):
