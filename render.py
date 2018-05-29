@@ -11,6 +11,8 @@ from PIL import Image
 
 import lab_utils as lu
 from cube import Cube, CubeMove
+from lab_utils import Mat3
+import magic
 
 # Global variables
 g_vert_shader_source = ""
@@ -18,17 +20,45 @@ g_frag_shader_source = ""
 g_shader_reload_timeout = 1.0
 g_shader = None
 g_vertex_array = None
+g_coordinateSystemModel = None
 
-vertices = [
-    [-0.9, -0.1, 0],
-    [-0.9, -0.9, 0],
-    [-0.1, -0.9, 0],
-    [-0.1, -0.1, 0],
-    [0.9, 0.1, 0],
-    [0.9, 0.9, 0],
-    [0.1, 0.9, 0],
-    [0.1, 0.1, 0],
-]
+vertices = [[0, 0, 0], [0, 3, 0], [3, 3, 0], [3, 0, 0], [0, 3, 0], [0, 3, -3],
+            [3, 3, -3], [3, 3, 0], [3, 0, 0], [3, 0, -3], [3, 3, -3], [3, 3, 0]]
+
+
+def draw_ui(width, height):
+    """ Draws the imgui UI """
+    pass
+
+
+def render_frame(width, height):
+    """ Renders the frame """
+    global g_shader
+    # Make the camera position
+    eye_pos = [5, 5, 5]
+    look_at = [1.5, 1.5, -1.5]
+    up_dir = [0, 1, 0]
+    world_to_view = lu.make_lookAt(eye_pos, look_at, up_dir)
+    y_fov = 45
+    view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 50)
+
+    world_to_clip = view_to_clip * world_to_view
+
+    # Make openGL use transform from screen space to NDC
+    glViewport(0, 0, width, height)
+    # Set the clear colour (i.e. background colour)
+    glClearColor(0.6, 0.7, 1.0, 1.0)
+    # Clear the colour and depth buffers
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
+    tfm_uniform_index = glGetUniformLocation(g_shader, "worldToClipTfm")
+    glUseProgram(g_shader)
+    glUniformMatrix4fv(tfm_uniform_index, 1, GL_TRUE, world_to_clip.getData())
+    glBindVertexArray(g_vertex_array)
+
+    for i in range(int(len(vertices) / 4)):
+        glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4)
+
+    magic.drawCoordinateSystem(view_to_clip, world_to_view)
 
 
 def init_resources():
@@ -51,26 +81,6 @@ def init_resources():
     glBindVertexArray(0)
 
     reload_shader()
-
-
-def draw_ui(width, height):
-    """ Draws the imgui UI """
-    pass
-
-
-def render_frame(width, height):
-    """ Renders the frame """
-    # Make openGL use transform from screen space to NDC
-    glViewport(0, 0, width, height)
-    # Set the clear colour (i.e. background colour)
-    glClearColor(0.6, 0.7, 1.0, 1.0)
-    # Clear the colour and depth buffers
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
-    glUseProgram(g_shader)
-    glBindVertexArray(g_vertex_array)
-    half = int(len(vertices) / 2)
-    glDrawArrays(GL_TRIANGLE_FAN, 0, half)
-    glDrawArrays(GL_TRIANGLE_FAN, half, half)
 
 
 def init_glfw_and_resources(title, start_width, start_height):
@@ -117,6 +127,8 @@ def init_glfw_and_resources(title, start_width, start_height):
     #glEnable(GL_DEPTH_CLAMP)
 
     init_resources()
+
+    magic.load_coord_sys()
 
     return window, impl
 

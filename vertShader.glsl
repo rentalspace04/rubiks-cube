@@ -1,7 +1,9 @@
 #version 330
-in vec3 ndcPositionAttr;
+in vec3 positionIn;
+
+uniform mat4 worldToClipTfm;
 
 void main()
 {
-    gl_Position = vec4(ndcPositionAttr, 1.0);
+    gl_Position = worldToClipTfm * vec4(positionIn, 1.0);
 }
