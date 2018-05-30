@@ -27,7 +27,7 @@ g_coordinateSystemModel = None
 g_cube = Cube()
 g_squares = []
 g_square_colors = []
-g_cube_move = 0
+g_cube_move = -1
 
 
 def make_squares():
@@ -56,9 +56,55 @@ def make_squares():
     glBindVertexArray(0)
 
 
+def add_move_buttons(move_name, move_func, btn_w):
+    """
+    Adds buttons for move, move2 and move'
+    Performs moves if button pressed
+    """
+    if imgui.button(move_name, btn_w):
+        move_func()
+    imgui.same_line()
+    if imgui.button(move_name + "2", btn_w):
+        move_func()
+        move_func()
+    imgui.same_line()
+    if imgui.button(move_name + "'", btn_w):
+        move_func()
+        move_func()
+        move_func()
+
+
 def draw_ui(width, height):
     """ Draws the imgui UI """
-    pass
+    global g_cube
+    btn_w = 25
+    imgui.set_window_font_scale(1.2)
+
+    # Rubiks Cube Moves
+    imgui.begin_group()
+    imgui.text("Moves:")
+
+    add_move_buttons("F", g_cube.move_f, btn_w)
+    imgui.same_line(spacing=20)
+    add_move_buttons("B", g_cube.move_b, btn_w)
+    add_move_buttons("R", g_cube.move_r, btn_w)
+    imgui.same_line(spacing=20)
+    add_move_buttons("L", g_cube.move_l, btn_w)
+    add_move_buttons("U", g_cube.move_u, btn_w)
+    imgui.same_line(spacing=20)
+    add_move_buttons("D", g_cube.move_d, btn_w)
+
+    imgui.end_group()
+
+    imgui.same_line(spacing=50)
+
+    # Cube Rotations
+    imgui.begin_group()
+    imgui.text("Rotations:")
+    add_move_buttons("x", g_cube.rotate_x, btn_w)
+    add_move_buttons("y", g_cube.rotate_y, btn_w)
+    add_move_buttons("z", g_cube.rotate_z, btn_w)
+    imgui.end_group()
 
 
 def render_frame(width, height):
@@ -175,7 +221,7 @@ def run_program(title, start_width, start_height):
         imgui.new_frame()
         imgui.set_next_window_position(5.0, 5.0, imgui.FIRST_USE_EVER)
 
-        imgui.begin("UI", 0)
+        imgui.begin("Rubiks Cube Controls", 0)
 
         draw_ui(width, height)
         render_frame(width, height)

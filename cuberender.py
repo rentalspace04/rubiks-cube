@@ -16,6 +16,9 @@ class CubeRenderer:
         colors.extend([square.value for square in self.cube.front.squares])
         colors.extend([square.value for square in self.cube.top.squares])
         colors.extend([square.value for square in self.cube.right.squares])
+        colors.extend([square.value for square in self.cube.back.squares])
+        colors.extend([square.value for square in self.cube.bottom.squares])
+        colors.extend([square.value for square in self.cube.left.squares])
         return colors
 
     def get_squares(self):
@@ -24,6 +27,9 @@ class CubeRenderer:
         self.__add_front_squares(squares)
         self.__add_top_squares(squares)
         self.__add_right_squares(squares)
+        self.__add_back_squares(squares)
+        self.__add_bottom_squares(squares)
+        self.__add_left_squares(squares)
         return squares
 
     def __add_front_squares(self, squares):
@@ -39,6 +45,23 @@ class CubeRenderer:
 
     def __add_right_squares(self, squares):
         translation = lambda row, col: lu.make_translation(3 - SPACING, 2 - row + SPACING, -SPACING - col)
+        rot_tfm = lu.make_rotation_y(math.pi / 2)
+        CubeRenderer.__add_squares(self.cube.right.squares, squares, rot_tfm,
+                                   translation)
+
+    def __add_back_squares(self, squares):
+        translation = lambda row, col: lu.make_translation(SPACING + 2 - col, SPACING + (2 - row), -3 - SPACING)
+        CubeRenderer.__add_squares(self.cube.front.squares, squares, lu.Mat4(),
+                                   translation)
+
+    def __add_bottom_squares(self, squares):
+        translation = lambda row, col: lu.make_translation(SPACING + col, SPACING, -SPACING - row)
+        rot_tfm = lu.make_rotation_x(-math.pi / 2)
+        CubeRenderer.__add_squares(self.cube.top.squares, squares, rot_tfm,
+                                   translation)
+
+    def __add_left_squares(self, squares):
+        translation = lambda row, col: lu.make_translation(SPACING, 2 - row + SPACING, -SPACING - 2 + col)
         rot_tfm = lu.make_rotation_y(math.pi / 2)
         CubeRenderer.__add_squares(self.cube.right.squares, squares, rot_tfm,
                                    translation)
