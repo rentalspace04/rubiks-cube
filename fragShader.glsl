@@ -31,10 +31,17 @@ in vec3 v2f_viewSpacePosition;
 
 uniform int squareColorIndex;
 uniform sampler2D plasticTexture;
+uniform vec3 viewSpaceLightPosition;
+uniform vec3 lightColourAndIntensity;
+uniform vec3 ambientLightColourAndIntensity;
 
 out vec4 fragmentColor;
 void main()
 {
+    vec3 viewSpaceDirToLight = normalize(viewSpaceLightPosition - v2f_viewSpacePosition);
+    vec3 viewSpaceNormal = normalize(v2f_normal);
+    float incomingIntensity = max(0.0, dot(viewSpaceNormal, viewSpaceDirToLight));
     vec4 textureColor = texture(plasticTexture, v2f_textureCoord);
-    fragmentColor = vec4(v2f_normal, 1.0);//textureColor * getSquareColor(squareColorIndex);
+    fragmentColor = vec4(vec3(incomingIntensity), 1.0);
+    //fragmentColor = vec4(v2f_normal, 1.0);//textureColor * getSquareColor(squareColorIndex);
 }

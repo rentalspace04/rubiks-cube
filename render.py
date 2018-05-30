@@ -92,6 +92,11 @@ def render_frame(width, height):
     up_dir = [0, 1, 0]
     y_fov = 45
 
+    # Light constants
+    light_color = [0.4, 0.5, 0.6]
+    light_position = [4, 4, -3]
+    ambient_light = [0.1, 0.1, 0.15]
+
     world_to_view = lu.make_lookAt(eye_pos, look_at, up_dir)
     view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 50)
     world_to_clip = view_to_clip * world_to_view
@@ -126,6 +131,10 @@ def render_frame(width, height):
     glUseProgram(g_shader)
     glUniformMatrix3fv(norm_uniform_index, 1, GL_TRUE,
                        model_to_view_normal.getData())
+
+    lu.setUniform(g_shader, "lightColourAndIntensity", light_color)
+    lu.setUniform(g_shader, "viewSpaceLightPosition", light_position)
+    lu.setUniform(g_shader, "ambientLightColourAndIntensity", ambient_light)
 
     glActiveTexture(GL_TEXTURE0)
     glBindTexture(GL_TEXTURE_2D, g_texture_id)
