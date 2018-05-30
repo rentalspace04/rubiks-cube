@@ -27,6 +27,7 @@ g_coordinateSystemModel = None
 g_cube = Cube()
 g_squares = []
 g_square_colors = []
+g_square_normals = []
 g_cube_move = -1
 g_texture_id = None
 
@@ -37,10 +38,12 @@ def make_squares():
     global g_squares
     global g_square_colors
     global g_vertex_array
+    global g_square_normals
     # Prepare the Squares with the cube renderer
     cube_renderer = CubeRenderer(g_cube)
     g_squares = cube_renderer.get_squares()
     g_square_colors = cube_renderer.get_colors()
+    g_square_normals = cube_renderer.get_normals()
     # Prepare the VAO and VBO
     g_vertex_array = glGenVertexArrays(1)
     glBindVertexArray(g_vertex_array)
@@ -55,6 +58,7 @@ def make_squares():
 
 
 def make_texture_coords():
+    """ Makes and buffers the list of texture coords """
     texture_coords = []
     for i in range(len(g_square_colors)):
         texture_coords.extend([
@@ -76,62 +80,12 @@ def make_texture_coords():
     glBindVertexArray(0)
 
 
-def add_move_buttons(move_name, move_func, btn_w):
-    """
-    Adds buttons for move, move2 and move'
-    Performs moves if button pressed
-    """
-    if imgui.button(move_name, btn_w):
-        move_func()
-    imgui.same_line()
-    if imgui.button(move_name + "2", btn_w):
-        move_func()
-        move_func()
-    imgui.same_line()
-    if imgui.button(move_name + "'", btn_w):
-        move_func()
-        move_func()
-        move_func()
-
-
-def draw_ui(width, height):
-    """ Draws the imgui UI """
-    global g_cube
-    btn_w = 25
-    imgui.set_window_font_scale(1.2)
-
-    # Rubiks Cube Moves
-    imgui.begin_group()
-    imgui.text("Moves:")
-
-    add_move_buttons("F", g_cube.move_f, btn_w)
-    imgui.same_line(spacing=20)
-    add_move_buttons("B", g_cube.move_b, btn_w)
-    add_move_buttons("R", g_cube.move_r, btn_w)
-    imgui.same_line(spacing=20)
-    add_move_buttons("L", g_cube.move_l, btn_w)
-    add_move_buttons("U", g_cube.move_u, btn_w)
-    imgui.same_line(spacing=20)
-    add_move_buttons("D", g_cube.move_d, btn_w)
-
-    imgui.end_group()
-
-    imgui.same_line(spacing=50)
-
-    # Cube Rotations
-    imgui.begin_group()
-    imgui.text("Rotations:")
-    add_move_buttons("x", g_cube.rotate_x, btn_w)
-    add_move_buttons("y", g_cube.rotate_y, btn_w)
-    add_move_buttons("z", g_cube.rotate_z, btn_w)
-    imgui.end_group()
-
-
 def render_frame(width, height):
     """ Renders the frame """
     global g_shader
     global g_squares
     global g_square_colors
+    global g_square_normals
     # Make the camera position
     eye_pos = [5, 5, 5]
     look_at = [1.5, 1.5, -1.5]
@@ -141,6 +95,7 @@ def render_frame(width, height):
     world_to_view = lu.make_lookAt(eye_pos, look_at, up_dir)
     view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 50)
     world_to_clip = view_to_clip * world_to_view
+    model_to_view_normal = lu.inverse(lu.transpose(lu.Mat3(world_to_view)))
 
     # Make openGL use transform from screen space to NDC
     glViewport(0, 0, width, height)
@@ -156,10 +111,21 @@ def render_frame(width, height):
 
     # Clear the colour and depth buffers
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
+
+    # Buffer the world to clip transform matrix
     tfm_uniform_index = glGetUniformLocation(g_shader, "worldToClipTfm")
     glUseProgram(g_shader)
     glUniformMatrix4fv(tfm_uniform_index, 1, GL_TRUE, world_to_clip.getData())
     glBindVertexArray(g_vertex_array)
+
+    model_uniform_index = glGetUniformLocation(g_shader, "modelToView")
+    glUseProgram(g_shader)
+    glUniformMatrix4fv(model_uniform_index, 1, GL_TRUE, world_to_view.getData())
+
+    norm_uniform_index = glGetUniformLocation(g_shader, "modelToViewNormal")
+    glUseProgram(g_shader)
+    glUniformMatrix3fv(norm_uniform_index, 1, GL_TRUE,
+                       model_to_view_normal.getData())
 
     glActiveTexture(GL_TEXTURE0)
     glBindTexture(GL_TEXTURE_2D, g_texture_id)
@@ -168,6 +134,7 @@ def render_frame(width, height):
 
     for i in range(int(len(g_squares) / 4)):
         lu.setUniform(g_shader, "squareColorIndex", g_square_colors[i])
+        lu.setUniform(g_shader, "squareNormal", g_square_normals[i])
         glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4)
 
     magic.drawCoordinateSystem(view_to_clip, world_to_view)
@@ -331,6 +298,57 @@ def run_program(title, start_width, start_height):
         # Poll for and process events
         glfw.poll_events()
         impl.process_inputs()
+
+
+def add_move_buttons(move_name, move_func, btn_w):
+    """
+    Adds buttons for move, move2 and move'
+    Performs moves if button pressed
+    """
+    if imgui.button(move_name, btn_w):
+        move_func()
+    imgui.same_line()
+    if imgui.button(move_name + "2", btn_w):
+        move_func()
+        move_func()
+    imgui.same_line()
+    if imgui.button(move_name + "'", btn_w):
+        move_func()
+        move_func()
+        move_func()
+
+
+def draw_ui(width, height):
+    """ Draws the imgui UI """
+    global g_cube
+    btn_w = 25
+    imgui.set_window_font_scale(1.2)
+
+    # Rubiks Cube Moves
+    imgui.begin_group()
+    imgui.text("Moves:")
+
+    add_move_buttons("F", g_cube.move_f, btn_w)
+    imgui.same_line(spacing=20)
+    add_move_buttons("B", g_cube.move_b, btn_w)
+    add_move_buttons("R", g_cube.move_r, btn_w)
+    imgui.same_line(spacing=20)
+    add_move_buttons("L", g_cube.move_l, btn_w)
+    add_move_buttons("U", g_cube.move_u, btn_w)
+    imgui.same_line(spacing=20)
+    add_move_buttons("D", g_cube.move_d, btn_w)
+
+    imgui.end_group()
+
+    imgui.same_line(spacing=50)
+
+    # Cube Rotations
+    imgui.begin_group()
+    imgui.text("Rotations:")
+    add_move_buttons("x", g_cube.rotate_x, btn_w)
+    add_move_buttons("y", g_cube.rotate_y, btn_w)
+    add_move_buttons("z", g_cube.rotate_z, btn_w)
+    imgui.end_group()
 
 
 def update(dt):

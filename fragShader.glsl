@@ -26,6 +26,8 @@ vec4 getSquareColor(int index) {
 }
 
 in vec2 v2f_textureCoord;
+in vec3 v2f_normal;
+in vec3 v2f_viewSpacePosition;
 
 uniform int squareColorIndex;
 uniform sampler2D plasticTexture;
@@ -34,5 +36,5 @@ out vec4 fragmentColor;
 void main()
 {
     vec4 textureColor = texture(plasticTexture, v2f_textureCoord);
-    fragmentColor = textureColor * getSquareColor(squareColorIndex);
+    fragmentColor = vec4(v2f_normal, 1.0);//textureColor * getSquareColor(squareColorIndex);
 }

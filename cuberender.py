@@ -21,7 +21,7 @@ class CubeRenderer:
         colors.extend([square.value for square in self.cube.back.squares])
         colors.extend([square.value for square in self.cube.bottom.squares])
         colors.extend([square.value for square in self.cube.left.squares])
-        colors.extend([SquareColor.BLACK.value for i in range(4 * 6)])
+        colors.extend([SquareColor.BLACK.value for i in range(4 * 3)])
         return colors
 
     def get_squares(self):
@@ -35,6 +35,29 @@ class CubeRenderer:
         self.__add_left_squares(squares)
         CubeRenderer.__make_inner_squares(squares)
         return squares
+
+    def get_normals(self):
+        norms = []
+        # front
+        norms.extend([[0.0, 0.0, -1.0] for _ in range(9)])
+        # top
+        norms.extend([[0.0, 1.0, 0.0] for _ in range(9)])
+        # right
+        norms.extend([[1.0, 0.0, 0.0] for _ in range(9)])
+        # back
+        norms.extend([[0.0, 0.0, 1.0] for _ in range(9)])
+        # bottom
+        norms.extend([[0.0, -1.0, 0.0] for _ in range(9)])
+        # left
+        norms.extend([[-1.0, 0.0, 0.0] for _ in range(9)])
+
+        norms.extend([[0.0, 0.0, 1.0] for _ in range(2)])
+        norms.extend([[0.0, 0.0, -1.0] for _ in range(2)])
+        norms.extend([[0.0, -1.0, 0.0] for _ in range(2)])
+        norms.extend([[0.0, 1.0, 0.0] for _ in range(2)])
+        norms.extend([[-1.0, 0.0, 0.0] for _ in range(2)])
+        norms.extend([[1.0, 0.0, 0.0] for _ in range(2)])
+        return norms
 
     def __add_front_squares(self, squares):
         translation = lambda row, col: lu.make_translation(SPACING + col, SPACING + (2 - row), -SPACING)
