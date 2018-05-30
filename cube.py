@@ -74,6 +74,7 @@ class SquareColor(enum.Enum):
     ORANGE = 4
     GREEN = 5
     BLUE = 6
+    BLACK = 7
 
 
 def rotate_indices(array, indices):

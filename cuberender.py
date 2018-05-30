@@ -1,6 +1,7 @@
 """ Takes cube objects and formats them for rendering """
-import lab_utils as lu
 import math
+import lab_utils as lu
+from cube import SquareColor
 
 SPACING = 0.05
 
@@ -12,6 +13,7 @@ class CubeRenderer:
         self.cube = cube
 
     def get_colors(self):
+        """ Gets the list of square colors """
         colors = []
         colors.extend([square.value for square in self.cube.front.squares])
         colors.extend([square.value for square in self.cube.top.squares])
@@ -19,6 +21,7 @@ class CubeRenderer:
         colors.extend([square.value for square in self.cube.back.squares])
         colors.extend([square.value for square in self.cube.bottom.squares])
         colors.extend([square.value for square in self.cube.left.squares])
+        colors.extend([SquareColor.BLACK.value for i in range(4 * 6)])
         return colors
 
     def get_squares(self):
@@ -30,6 +33,7 @@ class CubeRenderer:
         self.__add_back_squares(squares)
         self.__add_bottom_squares(squares)
         self.__add_left_squares(squares)
+        CubeRenderer.__make_inner_squares(squares)
         return squares
 
     def __add_front_squares(self, squares):
@@ -50,7 +54,7 @@ class CubeRenderer:
                                    translation)
 
     def __add_back_squares(self, squares):
-        translation = lambda row, col: lu.make_translation(SPACING + 2 - col, SPACING + (2 - row), -3 - SPACING)
+        translation = lambda row, col: lu.make_translation(SPACING + 2 - col, SPACING + (2 - row), -3 + SPACING)
         CubeRenderer.__add_squares(self.cube.front.squares, squares, lu.Mat4(),
                                    translation)
 
@@ -77,8 +81,43 @@ class CubeRenderer:
             squares_out.extend(apply_rect_transform(base_rect, tfm))
 
     @staticmethod
-    def __get_color(square):
-        pass
+    def __add_inner_squares(squares_out, rot_tfm, translation):
+        base_rect = make_rect(3 - 2 * SPACING, 3 - 2 * SPACING)
+        for i in range(2):
+            trans_tfm = translation(i)
+            tfm = trans_tfm * rot_tfm
+            squares_out.extend(apply_rect_transform(base_rect, tfm))
+
+    @staticmethod
+    def __make_inner_squares(squares):
+        """ Makes the inner squares of the cube """
+        CubeRenderer.__make_inner_squares_front(squares)
+        CubeRenderer.__make_inner_squares_up(squares)
+        CubeRenderer.__make_inner_squares_right(squares)
+
+    @staticmethod
+    def __make_inner_squares_front(squares):
+        rot_tfm = lu.Mat4()
+        translation = lambda i: lu.make_translation(SPACING, SPACING, -1 - SPACING - i)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
+        translation = lambda i: lu.make_translation(SPACING, SPACING, -1 + SPACING - i)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
+
+    @staticmethod
+    def __make_inner_squares_up(squares):
+        rot_tfm = lu.make_rotation_x(-math.pi / 2)
+        translation = lambda i: lu.make_translation(SPACING, 1 - SPACING + i, -SPACING)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
+        translation = lambda i: lu.make_translation(SPACING, 1 + SPACING + i, -SPACING)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
+
+    @staticmethod
+    def __make_inner_squares_right(squares):
+        rot_tfm = lu.make_rotation_y(math.pi / 2)
+        translation = lambda i: lu.make_translation(1 - SPACING + i, SPACING, -SPACING)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
+        translation = lambda i: lu.make_translation(1 + SPACING + i, SPACING, -SPACING)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
 
 
 def make_rect(width, height):

@@ -19,6 +19,9 @@ vec4 getSquareColor(int index) {
     } else if (index == 6) {
         // Blue
         return vec4(0.0, 0.0, 1.0, 1.0);
+    } else if (index == 7) {
+        // Black
+        return vec4(0.0, 0.0, 0.0, 1.0);
     }
 }
 
