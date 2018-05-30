@@ -28,6 +28,7 @@ g_cube = Cube()
 g_squares = []
 g_square_colors = []
 g_cube_move = -1
+g_texture_id = None
 
 
 def make_squares():
@@ -51,6 +52,25 @@ def make_squares():
     glBufferData(GL_ARRAY_BUFFER, data_buffer, GL_STATIC_DRAW)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
     glEnableVertexAttribArray(0)
+
+
+def make_texture_coords():
+    texture_coords = []
+    for i in range(len(g_square_colors)):
+        texture_coords.extend([
+            [0.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 1.0],
+            [1.0, 0.0],
+        ])
+    tex_coord_buffer = glGenBuffers(1)
+    flat_data = magic.flatten(texture_coords)
+    data_buffer = (c_float * len(flat_data))(*flat_data)
+    glBindBuffer(GL_ARRAY_BUFFER, tex_coord_buffer)
+    glBufferData(GL_ARRAY_BUFFER, data_buffer, GL_STATIC_DRAW)
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, None)
+    glEnableVertexAttribArray(1)
+    glBindAttribLocation(g_shader, 1, "textureCoord")
     # Unbind the buffers
     glBindBuffer(GL_ARRAY_BUFFER, 0)
     glBindVertexArray(0)
@@ -128,6 +148,11 @@ def render_frame(width, height):
     glClearColor(0.7, 0.8, 1.0, 1.0)
 
     make_squares()
+    make_texture_coords()
+
+    # Unbind the buffers
+    glBindBuffer(GL_ARRAY_BUFFER, 0)
+    glBindVertexArray(0)
 
     # Clear the colour and depth buffers
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
@@ -135,6 +160,11 @@ def render_frame(width, height):
     glUseProgram(g_shader)
     glUniformMatrix4fv(tfm_uniform_index, 1, GL_TRUE, world_to_clip.getData())
     glBindVertexArray(g_vertex_array)
+
+    glActiveTexture(GL_TEXTURE0)
+    glBindTexture(GL_TEXTURE_2D, g_texture_id)
+    loc = glGetUniformLocation(g_shader, "plasticTexture")
+    glUniform1i(loc, 0)
 
     for i in range(int(len(g_squares) / 4)):
         lu.setUniform(g_shader, "squareColorIndex", g_square_colors[i])
@@ -145,6 +175,16 @@ def render_frame(width, height):
 
 def init_resources():
     """ Initialises the program's resources """
+    global g_texture_id
+    with Image.open("data/background-cement-concrete-242236.jpg") as image:
+        g_texture_id = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, g_texture_id)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.size[0], image.size[1], 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE,
+                     image.tobytes("raw", "RGBX", 0, -1))
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glBindTexture(GL_TEXTURE_2D, 0)
     reload_shader()
 
 
@@ -198,6 +238,34 @@ def init_glfw_and_resources(title, start_width, start_height):
     return window, impl
 
 
+def setup_fbo(msaa_fbo,
+              fbo_width,
+              fbo_height,
+              num_samples,
+              color_render_buffer=0,
+              depth_render_buffer=0):
+    """ Adapted from lab 5 `magic.py` """
+    if not color_render_buffer:
+        color_render_buffer, depth_render_buffer = glGenRenderbuffers(2)
+    glBindRenderbuffer(GL_RENDERBUFFER, color_render_buffer)
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGB8,
+                                     fbo_width, fbo_height)
+    glBindRenderbuffer(GL_RENDERBUFFER, depth_render_buffer)
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples,
+                                     GL_DEPTH_COMPONENT32, fbo_width,
+                                     fbo_height)
+    glBindRenderbuffer(GL_RENDERBUFFER, 0)
+
+    glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo)
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                              GL_RENDERBUFFER, color_render_buffer)
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                              GL_RENDERBUFFER, depth_render_buffer)
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    return color_render_buffer, depth_render_buffer
+
+
 def run_program(title, start_width, start_height):
     """ Adapted from lab5 `magic.py` """
     # Initialise GLFW
@@ -209,6 +277,14 @@ def run_program(title, start_width, start_height):
     current_time = glfw.get_time()
     prev_mouse_x, prev_mouse_y = glfw.get_cursor_pos(window)
 
+    # Create the MSAA FBO
+    msaa_fbo = glGenFramebuffers(1)
+    fbo_width = start_width
+    fbo_height = start_height
+    num_samples = 8
+    color_render_buffer, depth_render_buffer = setup_fbo(
+        msaa_fbo, fbo_width, fbo_height, num_samples)
+
     while not glfw.window_should_close(window):
         prev_time = current_time
         current_time = glfw.get_time()
@@ -218,13 +294,33 @@ def run_program(title, start_width, start_height):
 
         width, height = glfw.get_framebuffer_size(window)
 
+        if fbo_width != width or fbo_height != height:
+            fbo_width = max(width, fbo_width)
+            fbo_height = max(height, fbo_height)
+            color_render_buffer, depth_render_buffer = setup_fbo(
+                msaa_fbo, fbo_width, fbo_height, num_samples,
+                color_render_buffer, depth_render_buffer)
+
+        glBindFramebuffer(GL_FRAMEBUFFER, msaa_fbo)
+
+        render_frame(width, height)
+
+        # Reset the frame buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, msaa_fbo)
+        # Copy the data from the render buffers attached to the MSAA FBO into the default FBO
+        glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
+                          GL_COLOR_BUFFER_BIT, GL_LINEAR)
+        # Reset the 'GL_READ_FRAMEBUFFER' binding point, just in case...
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
+
+        # Draw ImGui UI
         imgui.new_frame()
         imgui.set_next_window_position(5.0, 5.0, imgui.FIRST_USE_EVER)
 
         imgui.begin("Rubiks Cube Controls", 0)
 
         draw_ui(width, height)
-        render_frame(width, height)
 
         imgui.end()
         imgui.render()
