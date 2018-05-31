@@ -31,9 +31,15 @@ g_square_normals = []
 g_cube_move = -1
 g_texture_id = None
 
-g_light = [2.5, 10.0, 10.0]
+g_light_1 = [0.0, 5.0, 5.0]
+g_light_2 = [5.0, 5.0, 5.0]
+g_light_3 = [5.0, 5.0, 5.0]
+g_light_4 = [5.0, 5.0, 5.0]
+g_light_color_1 = [0.5, 0.5, 0.55]
+g_light_color_2 = [0.0, 0.0, 0.0]
+g_light_color_3 = [0.0, 0.0, 0.0]
+g_light_color_4 = [0.0, 0.0, 0.0]
 g_cam = [5.0, 5.0, 5.0]
-g_light_color = [0.7, 0.7, 0.75]
 g_ambi_color = [0.15, 0.15, 0.18]
 g_spec_color = [0.25, 0.25, 0.22]
 
@@ -74,7 +80,7 @@ def make_texture_coords():
             [1.0, 0.0],
         ])
     tex_coord_buffer = glGenBuffers(1)
-    flat_data = magic.flatten(texture_coords)
+    flat_data = lu.flatten(texture_coords)
     data_buffer = (c_float * len(flat_data))(*flat_data)
     glBindBuffer(GL_ARRAY_BUFFER, tex_coord_buffer)
     glBufferData(GL_ARRAY_BUFFER, data_buffer, GL_STATIC_DRAW)
@@ -93,8 +99,8 @@ def render_frame(width, height):
     global g_square_colors
     global g_square_normals
     global g_cam
-    global g_light
-    global g_light_color
+    global g_light_1
+    global g_light_color_1
     global g_ambi_color
     global g_spec_color
     # Make the camera position
@@ -104,8 +110,6 @@ def render_frame(width, height):
     y_fov = 45
 
     # Light constants
-    light_color = g_light_color
-    light_position = g_light
     ambient_light = g_ambi_color
     specular_light = g_spec_color
 
@@ -144,8 +148,19 @@ def render_frame(width, height):
     glUniformMatrix3fv(norm_uniform_index, 1, GL_TRUE,
                        model_to_view_normal.getData())
 
-    lu.setUniform(g_shader, "lightColourAndIntensity", light_color)
-    lu.setUniform(g_shader, "viewSpaceLightPosition", light_position)
+    # Add light 1 uniforms
+    lu.setUniform(g_shader, "lightColourAndIntensity1", g_light_color_1)
+    lu.setUniform(g_shader, "viewSpaceLightPosition1", g_light_1)
+    # Add light 2 uniforms
+    lu.setUniform(g_shader, "lightColourAndIntensity2", g_light_color_2)
+    lu.setUniform(g_shader, "viewSpaceLightPosition2", g_light_2)
+    # Add light 3 uniforms
+    lu.setUniform(g_shader, "lightColourAndIntensity3", g_light_color_3)
+    lu.setUniform(g_shader, "viewSpaceLightPosition3", g_light_3)
+    # Add light 4 uniforms
+    lu.setUniform(g_shader, "lightColourAndIntensity4", g_light_color_4)
+    lu.setUniform(g_shader, "viewSpaceLightPosition4", g_light_4)
+
     lu.setUniform(g_shader, "ambientLightColourAndIntensity", ambient_light)
     lu.setUniform(g_shader, "materialSpecular", specular_light)
 
@@ -344,8 +359,14 @@ def draw_ui(width, height):
     """ Draws the imgui UI """
     global g_cube
     global g_cam
-    global g_light
-    global g_light_color
+    global g_light_1
+    global g_light_color_1
+    global g_light_2
+    global g_light_color_2
+    global g_light_3
+    global g_light_color_3
+    global g_light_4
+    global g_light_color_4
     global g_ambi_color
     global g_spec_color
 
@@ -384,16 +405,44 @@ def draw_ui(width, height):
     if expanded:
         _, g_cam = imgui.slider_float3(
             "Camera Position", *g_cam, min_value=-20.0, max_value=20.0)
-        _, g_light = imgui.slider_float3(
-            "Light Position", *g_light, min_value=-20.0, max_value=20.0)
-        _, g_light_color = imgui.color_edit3("Light Colour", *g_light_color)
+        # Light 1
+        expanded, _ = imgui.collapsing_header("Light 1", True)
+        if expanded:
+            _, g_light_1 = imgui.slider_float3(
+                "Position", *g_light_1, min_value=-20.0, max_value=20.0)
+            _, g_light_color_1 = imgui.color_edit3("Colour", *g_light_color_1)
+            g_light_1 = list(g_light_1)
+            g_light_color_1 = list(g_light_color_1)
+        # Light 2
+        expanded, _ = imgui.collapsing_header("Light 2", True)
+        if expanded:
+            _, g_light_2 = imgui.slider_float3(
+                "Position", *g_light_2, min_value=-20.0, max_value=20.0)
+            _, g_light_color_2 = imgui.color_edit3("Colour", *g_light_color_2)
+            g_light_2 = list(g_light_2)
+            g_light_color_2 = list(g_light_color_2)
+        # Light 3
+        expanded, _ = imgui.collapsing_header("Light 3", True)
+        if expanded:
+            _, g_light_3 = imgui.slider_float3(
+                "Position", *g_light_3, min_value=-20.0, max_value=20.0)
+            _, g_light_color_3 = imgui.color_edit3("Colour", *g_light_color_3)
+            g_light_3 = list(g_light_3)
+            g_light_color_3 = list(g_light_color_3)
+        # Light 4
+        expanded, _ = imgui.collapsing_header("Light 4", True)
+        if expanded:
+            _, g_light_4 = imgui.slider_float3(
+                "Position", *g_light_4, min_value=-20.0, max_value=20.0)
+            _, g_light_color_4 = imgui.color_edit3("Colour", *g_light_color_4)
+            g_light_4 = list(g_light_4)
+            g_light_color_4 = list(g_light_color_4)
+        # Other Light constants
         _, g_ambi_color = imgui.color_edit3("Ambient Light Colour",
                                             *g_ambi_color)
         _, g_spec_color = imgui.color_edit3("Specular Light Colour",
                                             *g_spec_color)
         g_cam = list(g_cam)
-        g_light = list(g_light)
-        g_light_color = list(g_light_color)
         g_ambi_color = list(g_ambi_color)
         g_spec_color = list(g_spec_color)
 
