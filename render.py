@@ -409,32 +409,32 @@ def draw_ui(width, height):
         expanded, _ = imgui.collapsing_header("Light 1", True)
         if expanded:
             _, g_light_1 = imgui.slider_float3(
-                "Position", *g_light_1, min_value=-20.0, max_value=20.0)
-            _, g_light_color_1 = imgui.color_edit3("Colour", *g_light_color_1)
+                "Position 1", *g_light_1, min_value=-20.0, max_value=20.0)
+            _, g_light_color_1 = imgui.color_edit3("Colour 1", *g_light_color_1)
             g_light_1 = list(g_light_1)
             g_light_color_1 = list(g_light_color_1)
         # Light 2
         expanded, _ = imgui.collapsing_header("Light 2", True)
         if expanded:
             _, g_light_2 = imgui.slider_float3(
-                "Position", *g_light_2, min_value=-20.0, max_value=20.0)
-            _, g_light_color_2 = imgui.color_edit3("Colour", *g_light_color_2)
+                "Position 2", *g_light_2, min_value=-20.0, max_value=20.0)
+            _, g_light_color_2 = imgui.color_edit3("Colour 2", *g_light_color_2)
             g_light_2 = list(g_light_2)
             g_light_color_2 = list(g_light_color_2)
         # Light 3
         expanded, _ = imgui.collapsing_header("Light 3", True)
         if expanded:
             _, g_light_3 = imgui.slider_float3(
-                "Position", *g_light_3, min_value=-20.0, max_value=20.0)
-            _, g_light_color_3 = imgui.color_edit3("Colour", *g_light_color_3)
+                "Position 3 ", *g_light_3, min_value=-20.0, max_value=20.0)
+            _, g_light_color_3 = imgui.color_edit3("Colour 3", *g_light_color_3)
             g_light_3 = list(g_light_3)
             g_light_color_3 = list(g_light_color_3)
         # Light 4
         expanded, _ = imgui.collapsing_header("Light 4", True)
         if expanded:
             _, g_light_4 = imgui.slider_float3(
-                "Position", *g_light_4, min_value=-20.0, max_value=20.0)
-            _, g_light_color_4 = imgui.color_edit3("Colour", *g_light_color_4)
+                "Position 4", *g_light_4, min_value=-20.0, max_value=20.0)
+            _, g_light_color_4 = imgui.color_edit3("Colour 4", *g_light_color_4)
             g_light_4 = list(g_light_4)
             g_light_color_4 = list(g_light_color_4)
         # Other Light constants
