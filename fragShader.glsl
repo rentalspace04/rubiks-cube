@@ -2,9 +2,9 @@
 
 float getSpecularExponent(int index) {
     if (index == 7) {
-        return 25.0;
+        return 30.0;
     }
-    return 4.0;
+    return 10.0;
 }
 
 vec3 fresnelSchick(vec3 r0, float cosAngle) {
@@ -32,7 +32,7 @@ vec3 getSquareColor(int index) {
         return vec3(0.0, 0.0, 1.0);
     } else if (index == 7) {
         // Black
-        return vec3(0.1, 0.1, 0.1);
+        return vec3(0.2, 0.2, 0.2);
     }
 }
 

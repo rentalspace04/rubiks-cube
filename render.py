@@ -31,11 +31,11 @@ g_square_normals = []
 g_cube_move = -1
 g_texture_id = None
 
-g_light = [3.0, 5.0, 4.0]
+g_light = [2.5, 10.0, 10.0]
 g_cam = [5.0, 5.0, 5.0]
-g_light_color = [0.8, 0.9, 1.0]
-g_ambi_color = [0.45, 0.45, 0.4]
-g_spec_color = [0.9, 0.9, 0.9]
+g_light_color = [0.7, 0.7, 0.75]
+g_ambi_color = [0.15, 0.15, 0.18]
+g_spec_color = [0.25, 0.25, 0.22]
 
 
 def make_squares():
@@ -383,9 +383,9 @@ def draw_ui(width, height):
     expanded, _ = imgui.collapsing_header("View Settings", True)
     if expanded:
         _, g_cam = imgui.slider_float3(
-            "Camera Position", *g_cam, min_value=-10.0, max_value=10.0)
+            "Camera Position", *g_cam, min_value=-20.0, max_value=20.0)
         _, g_light = imgui.slider_float3(
-            "Light Position", *g_light, min_value=-10.0, max_value=10.0)
+            "Light Position", *g_light, min_value=-20.0, max_value=20.0)
         _, g_light_color = imgui.color_edit3("Light Colour", *g_light_color)
         _, g_ambi_color = imgui.color_edit3("Ambient Light Colour",
                                             *g_ambi_color)
