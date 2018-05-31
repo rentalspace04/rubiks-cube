@@ -4,6 +4,9 @@ import lab_utils as lu
 from cube import SquareColor
 
 SPACING = 0.05
+FRONT_TRANS = lambda row, col: lu.make_translation(SPACING + col, SPACING + (2 - row), -SPACING)
+TOP_TRANS = lambda row, col: lu.make_translation(SPACING + col, 3 - SPACING, -SPACING - 2 + row)
+RIGHT_TRANS = lambda row, col: lu.make_translation(3 - SPACING, 2 - row + SPACING, -SPACING - col)
 
 
 class CubeRenderer:
@@ -21,7 +24,7 @@ class CubeRenderer:
         colors.extend([square.value for square in self.cube.back.squares])
         colors.extend([square.value for square in self.cube.bottom.squares])
         colors.extend([square.value for square in self.cube.left.squares])
-        colors.extend([SquareColor.BLACK.value for i in range(4 * 3)])
+        colors.extend([SquareColor.BLACK.value for i in range(4 * 3 * 9)])
         return colors
 
     def get_squares(self):
@@ -37,41 +40,42 @@ class CubeRenderer:
         return squares
 
     def get_normals(self):
+        """ Gets the list of normals to each square """
         norms = []
         # front
-        norms.extend([[0.0, 0.0, -1.0] for _ in range(9)])
-        # top
-        norms.extend([[0.0, 1.0, 0.0] for _ in range(9)])
-        # right
-        norms.extend([[1.0, 0.0, 0.0] for _ in range(9)])
-        # back
         norms.extend([[0.0, 0.0, 1.0] for _ in range(9)])
-        # bottom
+        # # top
+        norms.extend([[0.0, 1.0, 0.0] for _ in range(9)])
+        # # right
+        norms.extend([[1.0, 0.0, 0.0] for _ in range(9)])
+        # # back
+        norms.extend([[0.0, 0.0, -1.0] for _ in range(9)])
+        # # bottom
         norms.extend([[0.0, -1.0, 0.0] for _ in range(9)])
-        # left
+        # # left
         norms.extend([[-1.0, 0.0, 0.0] for _ in range(9)])
 
-        norms.extend([[0.0, 0.0, 1.0] for _ in range(2)])
-        norms.extend([[0.0, 0.0, -1.0] for _ in range(2)])
-        norms.extend([[0.0, -1.0, 0.0] for _ in range(2)])
-        norms.extend([[0.0, 1.0, 0.0] for _ in range(2)])
-        norms.extend([[-1.0, 0.0, 0.0] for _ in range(2)])
-        norms.extend([[1.0, 0.0, 0.0] for _ in range(2)])
+        norms.extend([[0.0, 0.0, 1.0] for _ in range(2 * 9)])
+        norms.extend([[0.0, 0.0, -1.0] for _ in range(2 * 9)])
+        norms.extend([[0.0, 1.0, 0.0] for _ in range(2 * 9)])
+        norms.extend([[0.0, -1.0, 0.0] for _ in range(2 * 9)])
+        norms.extend([[1.0, 0.0, 0.0] for _ in range(2 * 9)])
+        norms.extend([[-1.0, 0.0, 0.0] for _ in range(2 * 9)])
         return norms
 
     def __add_front_squares(self, squares):
-        translation = lambda row, col: lu.make_translation(SPACING + col, SPACING + (2 - row), -SPACING)
+        translation = FRONT_TRANS
         CubeRenderer.__add_squares(self.cube.front.squares, squares, lu.Mat4(),
                                    translation)
 
     def __add_top_squares(self, squares):
-        translation = lambda row, col: lu.make_translation(SPACING + col, 3 - SPACING, -SPACING - 2 + row)
+        translation = TOP_TRANS
         rot_tfm = lu.make_rotation_x(-math.pi / 2)
         CubeRenderer.__add_squares(self.cube.top.squares, squares, rot_tfm,
                                    translation)
 
     def __add_right_squares(self, squares):
-        translation = lambda row, col: lu.make_translation(3 - SPACING, 2 - row + SPACING, -SPACING - col)
+        translation = RIGHT_TRANS
         rot_tfm = lu.make_rotation_y(math.pi / 2)
         CubeRenderer.__add_squares(self.cube.right.squares, squares, rot_tfm,
                                    translation)
@@ -104,12 +108,16 @@ class CubeRenderer:
             squares_out.extend(apply_rect_transform(base_rect, tfm))
 
     @staticmethod
-    def __add_inner_squares(squares_out, rot_tfm, translation):
-        base_rect = make_rect(3 - 2 * SPACING, 3 - 2 * SPACING)
-        for i in range(2):
-            trans_tfm = translation(i)
-            tfm = trans_tfm * rot_tfm
-            squares_out.extend(apply_rect_transform(base_rect, tfm))
+    def __add_inner_squares(squares_out, rot_tfm, base_trans, small_trans):
+        base_rect = make_rect(1 - 2 * SPACING, 1 - 2 * SPACING)
+        for j in range(2):
+            base_tfm = base_trans(j)
+            for i in range(9):
+                col = i % 3
+                row = int(i / 3)
+                small_tfm = small_trans(row, col)
+                tfm = small_tfm * base_tfm * rot_tfm
+                squares_out.extend(apply_rect_transform(base_rect, tfm))
 
     @staticmethod
     def __make_inner_squares(squares):
@@ -121,26 +129,32 @@ class CubeRenderer:
     @staticmethod
     def __make_inner_squares_front(squares):
         rot_tfm = lu.Mat4()
-        translation = lambda i: lu.make_translation(SPACING, SPACING, -1 - SPACING - i)
-        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
-        translation = lambda i: lu.make_translation(SPACING, SPACING, -1 + SPACING - i)
-        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
+        translation = lambda i: lu.make_translation(0, 0, -1 - i)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation,
+                                         FRONT_TRANS)
+        translation = lambda i: lu.make_translation(0, 0, -1 + 2 * SPACING - i)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation,
+                                         FRONT_TRANS)
 
     @staticmethod
     def __make_inner_squares_up(squares):
         rot_tfm = lu.make_rotation_x(-math.pi / 2)
-        translation = lambda i: lu.make_translation(SPACING, 1 - SPACING + i, -SPACING)
-        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
-        translation = lambda i: lu.make_translation(SPACING, 1 + SPACING + i, -SPACING)
-        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
+        translation = lambda i: lu.make_translation(0, -2 + i, 0)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation,
+                                         TOP_TRANS)
+        translation = lambda i: lu.make_translation(0, -2 + 2 * SPACING + i, 0)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation,
+                                         TOP_TRANS)
 
     @staticmethod
     def __make_inner_squares_right(squares):
         rot_tfm = lu.make_rotation_y(math.pi / 2)
-        translation = lambda i: lu.make_translation(1 - SPACING + i, SPACING, -SPACING)
-        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
-        translation = lambda i: lu.make_translation(1 + SPACING + i, SPACING, -SPACING)
-        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation)
+        translation = lambda i: lu.make_translation(-2 + i, 0, 0)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation,
+                                         RIGHT_TRANS)
+        translation = lambda i: lu.make_translation(-2 + 2 * SPACING + i, 0, 0)
+        CubeRenderer.__add_inner_squares(squares, rot_tfm, translation,
+                                         RIGHT_TRANS)
 
 
 def make_rect(width, height):

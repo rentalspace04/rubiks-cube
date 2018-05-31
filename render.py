@@ -31,6 +31,12 @@ g_square_normals = []
 g_cube_move = -1
 g_texture_id = None
 
+g_light = [3.0, 5.0, 4.0]
+g_cam = [5.0, 5.0, 5.0]
+g_light_color = [0.8, 0.9, 1.0]
+g_ambi_color = [0.45, 0.45, 0.4]
+g_spec_color = [0.9, 0.9, 0.9]
+
 
 def make_squares():
     """ Makes the vertices to draw """
@@ -60,7 +66,7 @@ def make_squares():
 def make_texture_coords():
     """ Makes and buffers the list of texture coords """
     texture_coords = []
-    for i in range(len(g_square_colors)):
+    for _ in range(len(g_square_colors)):
         texture_coords.extend([
             [0.0, 0.0],
             [0.0, 1.0],
@@ -86,16 +92,22 @@ def render_frame(width, height):
     global g_squares
     global g_square_colors
     global g_square_normals
+    global g_cam
+    global g_light
+    global g_light_color
+    global g_ambi_color
+    global g_spec_color
     # Make the camera position
-    eye_pos = [5, 5, 5]
+    eye_pos = g_cam
     look_at = [1.5, 1.5, -1.5]
     up_dir = [0, 1, 0]
     y_fov = 45
 
     # Light constants
-    light_color = [0.4, 0.5, 0.6]
-    light_position = [4, 4, -3]
-    ambient_light = [0.1, 0.1, 0.15]
+    light_color = g_light_color
+    light_position = g_light
+    ambient_light = g_ambi_color
+    specular_light = g_spec_color
 
     world_to_view = lu.make_lookAt(eye_pos, look_at, up_dir)
     view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 50)
@@ -135,6 +147,7 @@ def render_frame(width, height):
     lu.setUniform(g_shader, "lightColourAndIntensity", light_color)
     lu.setUniform(g_shader, "viewSpaceLightPosition", light_position)
     lu.setUniform(g_shader, "ambientLightColourAndIntensity", ambient_light)
+    lu.setUniform(g_shader, "materialSpecular", specular_light)
 
     glActiveTexture(GL_TEXTURE0)
     glBindTexture(GL_TEXTURE_2D, g_texture_id)
@@ -330,6 +343,12 @@ def add_move_buttons(move_name, move_func, btn_w):
 def draw_ui(width, height):
     """ Draws the imgui UI """
     global g_cube
+    global g_cam
+    global g_light
+    global g_light_color
+    global g_ambi_color
+    global g_spec_color
+
     btn_w = 25
     imgui.set_window_font_scale(1.2)
 
@@ -358,6 +377,26 @@ def draw_ui(width, height):
     add_move_buttons("y", g_cube.rotate_y, btn_w)
     add_move_buttons("z", g_cube.rotate_z, btn_w)
     imgui.end_group()
+
+    imgui.begin_group()
+    imgui.text("Rotations:")
+    add_move_buttons("x", g_cube.rotate_x, btn_w)
+    add_move_buttons("y", g_cube.rotate_y, btn_w)
+    add_move_buttons("z", g_cube.rotate_z, btn_w)
+    imgui.end_group()
+
+    _, g_cam = imgui.slider_float3(
+        "Camera Position", *g_cam, min_value=-10.0, max_value=10.0)
+    _, g_light = imgui.slider_float3(
+        "Light Position", *g_light, min_value=-10.0, max_value=10.0)
+    _, g_light_color = imgui.color_edit3("Light Colour", *g_light_color)
+    _, g_ambi_color = imgui.color_edit3("Ambient Light Colour", *g_ambi_color)
+    _, g_spec_color = imgui.color_edit3("Specular Light Colour", *g_spec_color)
+    g_cam = list(g_cam)
+    g_light = list(g_light)
+    g_light_color = list(g_light_color)
+    g_ambi_color = list(g_ambi_color)
+    g_spec_color = list(g_spec_color)
 
 
 def update(dt):
