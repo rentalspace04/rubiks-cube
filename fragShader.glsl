@@ -1,6 +1,7 @@
 #version 330
 
 #define FLOAT_PRECISION 0.0001
+#define FOG_CONSTANT 0.02
 
 float getSpecularExponent(int index) {
     if (index == 7) {
@@ -36,6 +37,12 @@ vec3 getSquareColor(int index) {
         // Black
         return vec3(0.2, 0.2, 0.2);
     }
+}
+
+vec3 addFog(in vec3 colorIn, in float distanceToCamera) {
+    float fogAmount = 1.0 - exp( -distanceToCamera * FOG_CONSTANT );
+    vec3  fogColor  = vec3(0.5,0.6,0.7);
+    return mix(colorIn, fogColor, fogAmount);
 }
 
 in vec2 v2f_textureCoord;
@@ -103,6 +110,11 @@ void main()
         getSquareColor(squareColorIndex)
     );
     vec3 ambient = materialDiffuse * ambientLightColourAndIntensity;
-    fragmentColor = vec4(light1 + light2 + light3 + light4 + ambient, 1.0);
+
+    float distanceToCamera = length(v2f_viewSpacePosition);
+
+    vec3 outgoingLight = light1 + light2 + light3 + light4 + ambient;
+    outgoingLight = addFog(outgoingLight, distanceToCamera);
+    fragmentColor = vec4(outgoingLight, 1.0);
     //fragmentColor = vec4(v2f_normal, 1.0);//textureColor * getSquareColor(squareColorIndex);
 }

@@ -114,7 +114,7 @@ def render_frame(width, height):
     specular_light = g_spec_color
 
     world_to_view = lu.make_lookAt(eye_pos, look_at, up_dir)
-    view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 50)
+    view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 200)
     world_to_clip = view_to_clip * world_to_view
     model_to_view_normal = lu.inverse(lu.transpose(lu.Mat3(world_to_view)))
 
@@ -404,7 +404,7 @@ def draw_ui(width, height):
     expanded, _ = imgui.collapsing_header("View Settings", True)
     if expanded:
         _, g_cam = imgui.slider_float3(
-            "Camera Position", *g_cam, min_value=-20.0, max_value=20.0)
+            "Camera Position", *g_cam, min_value=-20.0, max_value=150.0)
         # Light 1
         expanded, _ = imgui.collapsing_header("Light 1", True)
         if expanded:
