@@ -352,51 +352,50 @@ def draw_ui(width, height):
     btn_w = 25
     imgui.set_window_font_scale(1.2)
 
-    # Rubiks Cube Moves
-    imgui.begin_group()
-    imgui.text("Moves:")
+    expanded, _ = imgui.collapsing_header("Controls", True)
+    if expanded:
+        # Rubiks Cube Moves
+        imgui.begin_group()
+        imgui.text("Moves:")
 
-    add_move_buttons("F", g_cube.move_f, btn_w)
-    imgui.same_line(spacing=20)
-    add_move_buttons("B", g_cube.move_b, btn_w)
-    add_move_buttons("R", g_cube.move_r, btn_w)
-    imgui.same_line(spacing=20)
-    add_move_buttons("L", g_cube.move_l, btn_w)
-    add_move_buttons("U", g_cube.move_u, btn_w)
-    imgui.same_line(spacing=20)
-    add_move_buttons("D", g_cube.move_d, btn_w)
+        add_move_buttons("F", g_cube.move_f, btn_w)
+        imgui.same_line(spacing=20)
+        add_move_buttons("B", g_cube.move_b, btn_w)
+        add_move_buttons("R", g_cube.move_r, btn_w)
+        imgui.same_line(spacing=20)
+        add_move_buttons("L", g_cube.move_l, btn_w)
+        add_move_buttons("U", g_cube.move_u, btn_w)
+        imgui.same_line(spacing=20)
+        add_move_buttons("D", g_cube.move_d, btn_w)
 
-    imgui.end_group()
+        imgui.end_group()
 
-    imgui.same_line(spacing=50)
+        imgui.same_line(spacing=50)
 
-    # Cube Rotations
-    imgui.begin_group()
-    imgui.text("Rotations:")
-    add_move_buttons("x", g_cube.rotate_x, btn_w)
-    add_move_buttons("y", g_cube.rotate_y, btn_w)
-    add_move_buttons("z", g_cube.rotate_z, btn_w)
-    imgui.end_group()
+        # Cube Rotations
+        imgui.begin_group()
+        imgui.text("Rotations:")
+        add_move_buttons("x", g_cube.rotate_x, btn_w)
+        add_move_buttons("y", g_cube.rotate_y, btn_w)
+        add_move_buttons("z", g_cube.rotate_z, btn_w)
+        imgui.end_group()
 
-    imgui.begin_group()
-    imgui.text("Rotations:")
-    add_move_buttons("x", g_cube.rotate_x, btn_w)
-    add_move_buttons("y", g_cube.rotate_y, btn_w)
-    add_move_buttons("z", g_cube.rotate_z, btn_w)
-    imgui.end_group()
-
-    _, g_cam = imgui.slider_float3(
-        "Camera Position", *g_cam, min_value=-10.0, max_value=10.0)
-    _, g_light = imgui.slider_float3(
-        "Light Position", *g_light, min_value=-10.0, max_value=10.0)
-    _, g_light_color = imgui.color_edit3("Light Colour", *g_light_color)
-    _, g_ambi_color = imgui.color_edit3("Ambient Light Colour", *g_ambi_color)
-    _, g_spec_color = imgui.color_edit3("Specular Light Colour", *g_spec_color)
-    g_cam = list(g_cam)
-    g_light = list(g_light)
-    g_light_color = list(g_light_color)
-    g_ambi_color = list(g_ambi_color)
-    g_spec_color = list(g_spec_color)
+    expanded, _ = imgui.collapsing_header("View Settings", True)
+    if expanded:
+        _, g_cam = imgui.slider_float3(
+            "Camera Position", *g_cam, min_value=-10.0, max_value=10.0)
+        _, g_light = imgui.slider_float3(
+            "Light Position", *g_light, min_value=-10.0, max_value=10.0)
+        _, g_light_color = imgui.color_edit3("Light Colour", *g_light_color)
+        _, g_ambi_color = imgui.color_edit3("Ambient Light Colour",
+                                            *g_ambi_color)
+        _, g_spec_color = imgui.color_edit3("Specular Light Colour",
+                                            *g_spec_color)
+        g_cam = list(g_cam)
+        g_light = list(g_light)
+        g_light_color = list(g_light_color)
+        g_ambi_color = list(g_ambi_color)
+        g_spec_color = list(g_spec_color)
 
 
 def update(dt):
