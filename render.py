@@ -12,7 +12,6 @@ import lab_utils as lu
 from cube import Cube, CubeMove
 from cuberender import CubeRenderer
 
-import magic  # Only using the coordinate system
 
 # Global variables
 g_vert_shader_source = ""
@@ -20,7 +19,6 @@ g_frag_shader_source = ""
 g_shader_reload_timeout = 1.0
 g_shader = None
 g_vertex_array = None
-g_coordinateSystemModel = None
 g_cube = Cube()
 g_squares = []
 g_square_colors = []
@@ -187,8 +185,6 @@ def render_frame(width, height):
         lu.setUniform(g_shader, "squareNormal", g_square_normals[i])
         glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4)
 
-    magic.drawCoordinateSystem(view_to_clip, world_to_view)
-
 
 def init_resources():
     """ Initialises the program's resources """
@@ -248,8 +244,6 @@ def init_glfw_and_resources(title, start_width, start_height):
     #glEnable(GL_DEPTH_CLAMP)
 
     init_resources()
-
-    magic.load_coord_sys()
 
     return window, impl
 
