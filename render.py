@@ -12,7 +12,7 @@ import lab_utils as lu
 from cube import Cube, CubeMove
 from cuberender import CubeRenderer
 
-import magic # Only using the coordinate system
+import magic  # Only using the coordinate system
 
 # Global variables
 g_vert_shader_source = ""
@@ -25,7 +25,6 @@ g_cube = Cube()
 g_squares = []
 g_square_colors = []
 g_square_normals = []
-g_cube_move = -1
 g_texture_id = None
 
 g_light_1 = [-1.0, 5.0, 5.0]
@@ -43,6 +42,11 @@ g_fog_color = [0.6, 0.6, 0.6]
 g_fog_density = 0.0055
 g_fog_height = 1.5
 g_fog_max = 1.3
+
+g_cube_move = -1
+g_moves = []
+g_move_string = ""
+MOVE_TIME = 0.7
 
 
 def make_squares():
@@ -381,6 +385,8 @@ def draw_ui():
     global g_fog_height
     global g_fog_max
 
+    global g_move_string
+
     btn_w = 25
     imgui.set_window_font_scale(1.2)
 
@@ -415,6 +421,12 @@ def draw_ui():
         add_move_buttons("y", g_cube.rotate_y, btn_w)
         add_move_buttons("z", g_cube.rotate_z, btn_w)
         imgui.end_group()
+
+        _, g_move_string = imgui.core.input_text("", g_move_string, 64)
+        imgui.same_line(spacing=10)
+        clicked = imgui.button("Perform")
+        if clicked:
+            parse_moves()
 
     expanded, _ = imgui.collapsing_header("View Settings", True)
     if expanded:
@@ -470,31 +482,54 @@ def draw_ui():
             _, g_fog_max = imgui.input_float("Max Fog", g_fog_max)
 
 
+def parse_moves():
+    """ Parses the move string and starts performing the moves """
+    global g_cube
+    global g_cube_move
+    global g_move_string
+    global g_moves
+    try:
+        moves = parse_all_moves(g_move_string)
+        g_moves = moves
+        g_cube_move = 0
+    except ValueError as err:
+        print("Cannot parse moves - {}".format(err))
+
+
+def parse_all_moves(moves_string):
+    """ Parse a move string """
+    moves = []
+    if not moves_string:
+        raise ValueError("No Moves Given")
+    moves_strings = moves_string.split(" ")
+    for move_string in moves_strings:
+        move = CubeMove.parse(move_string)
+        moves.append(move)
+    return moves
+
+
 def update(dt):
-    """ Updates the 'Game Logic' """
+    """ Performs programmed moves """
     global g_shader_reload_timeout
     global g_cube
     global g_cube_move
+    global g_moves
     g_shader_reload_timeout -= dt
     if g_shader_reload_timeout <= 0:
-        g_shader_reload_timeout = 5.0
+        g_shader_reload_timeout = MOVE_TIME
         reload_shader()
-        if g_cube_move == 0:
-            g_cube.move_r()
-            g_cube_move = 1
-        elif g_cube_move == 1:
-            g_cube.move_u()
-            g_cube_move = 2
-        elif g_cube_move == 2:
-            g_cube.move_r()
-            g_cube.move_r()
-            g_cube.move_r()
-            g_cube_move = 3
-        elif g_cube_move == 3:
-            g_cube.move_u()
-            g_cube.move_u()
-            g_cube.move_u()
+        # Don't move if move num is -1
+        if g_cube_move == -1:
+            return
+        print(g_cube_move)
+        for i in range(len(g_moves)):
+            if g_cube_move == i:
+                move = g_moves[i]
+        g_cube_move += 1
+        if g_cube_move == len(g_moves):
             g_cube_move = 0
+        if move:
+            g_cube.make_move(move)
 
 
 def reload_shader():
