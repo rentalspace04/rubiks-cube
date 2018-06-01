@@ -1,7 +1,50 @@
 #version 330
 
 #define FLOAT_PRECISION 0.0001
-#define FOG_CONSTANT 0.02
+
+// Inputs
+in vec2 v2f_textureCoord;
+in vec3 v2f_normal;
+in vec3 v2f_viewSpacePosition;
+
+// Model to view transform
+uniform mat4 modelToView;
+uniform vec3 camPos;
+
+// Colour and texture
+uniform int squareColorIndex;
+uniform sampler2D plasticTexture;
+
+// Light positions and colors
+uniform vec3 viewSpaceLightPosition1;
+uniform vec3 lightColourAndIntensity1;
+uniform vec3 viewSpaceLightPosition2;
+uniform vec3 lightColourAndIntensity2;
+uniform vec3 viewSpaceLightPosition3;
+uniform vec3 lightColourAndIntensity3;
+uniform vec3 viewSpaceLightPosition4;
+uniform vec3 lightColourAndIntensity4;
+
+// Ambient and Specular Colors
+uniform vec3 ambientLightColourAndIntensity;
+uniform vec3 materialSpecular;
+
+// Fog constants
+uniform vec3 fogColor;
+uniform float fogDensityConst;
+uniform float fogHeightConst;
+uniform float fogMax;
+
+out vec4 fragmentColor;
+
+vec3 addFog(in vec3 colorIn, in float distanceToCamera, in vec3 camPos, in vec3 camToPoint) {
+    float fogAmount = (
+        fogHeightConst * exp(-camPos.y * fogDensityConst)
+        * (1.0 - exp(-distanceToCamera * camToPoint.y * fogDensityConst)) / camToPoint.y
+    );
+    fogAmount = min(fogAmount, fogMax);
+    return mix(colorIn, fogColor, fogAmount);
+}
 
 float getSpecularExponent(int index) {
     if (index == 7) {
@@ -38,31 +81,6 @@ vec3 getSquareColor(int index) {
         return vec3(0.2, 0.2, 0.2);
     }
 }
-
-vec3 addFog(in vec3 colorIn, in float distanceToCamera) {
-    float fogAmount = 1.0 - exp( -distanceToCamera * FOG_CONSTANT );
-    vec3  fogColor  = vec3(0.5,0.6,0.7);
-    return mix(colorIn, fogColor, fogAmount);
-}
-
-in vec2 v2f_textureCoord;
-in vec3 v2f_normal;
-in vec3 v2f_viewSpacePosition;
-
-uniform int squareColorIndex;
-uniform sampler2D plasticTexture;
-uniform vec3 viewSpaceLightPosition1;
-uniform vec3 lightColourAndIntensity1;
-uniform vec3 viewSpaceLightPosition2;
-uniform vec3 lightColourAndIntensity2;
-uniform vec3 viewSpaceLightPosition3;
-uniform vec3 lightColourAndIntensity3;
-uniform vec3 viewSpaceLightPosition4;
-uniform vec3 lightColourAndIntensity4;
-uniform vec3 ambientLightColourAndIntensity;
-uniform vec3 materialSpecular;
-
-out vec4 fragmentColor;
 
 bool vec_is_zero(vec3 vector) {
     return vector.x < FLOAT_PRECISION && vector.y < FLOAT_PRECISION && vector.z < FLOAT_PRECISION;
@@ -113,8 +131,10 @@ void main()
 
     float distanceToCamera = length(v2f_viewSpacePosition);
 
+    vec3 viewCamPos = (modelToView * vec4(camPos, 1.0)).xyz;
+
     vec3 outgoingLight = light1 + light2 + light3 + light4 + ambient;
-    outgoingLight = addFog(outgoingLight, distanceToCamera);
+    outgoingLight = addFog(outgoingLight, distanceToCamera, viewCamPos, v2f_viewSpacePosition);
     fragmentColor = vec4(outgoingLight, 1.0);
     //fragmentColor = vec4(v2f_normal, 1.0);//textureColor * getSquareColor(squareColorIndex);
 }

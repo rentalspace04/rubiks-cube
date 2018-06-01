@@ -1,7 +1,6 @@
 """ Renders the program """
 import sys
-import math
-from ctypes import sizeof, c_float, c_void_p, c_uint, string_at
+from ctypes import c_float
 
 from OpenGL.GL import *  #pylint: disable=unused-wildcard-import,wildcard-import
 import glfw
@@ -13,9 +12,7 @@ import lab_utils as lu
 from cube import Cube, CubeMove
 from cuberender import CubeRenderer
 
-import magic
-
-import cuberender as cr
+import magic # Only using the coordinate system
 
 # Global variables
 g_vert_shader_source = ""
@@ -31,17 +28,21 @@ g_square_normals = []
 g_cube_move = -1
 g_texture_id = None
 
-g_light_1 = [0.0, 5.0, 5.0]
+g_light_1 = [-1.0, 5.0, 5.0]
 g_light_2 = [5.0, 5.0, 5.0]
 g_light_3 = [5.0, 5.0, 5.0]
 g_light_4 = [5.0, 5.0, 5.0]
-g_light_color_1 = [0.5, 0.5, 0.55]
+g_light_color_1 = [0.8, 0.8, 0.85]
 g_light_color_2 = [0.0, 0.0, 0.0]
 g_light_color_3 = [0.0, 0.0, 0.0]
 g_light_color_4 = [0.0, 0.0, 0.0]
 g_cam = [5.0, 5.0, 5.0]
-g_ambi_color = [0.15, 0.15, 0.18]
+g_ambi_color = [0.25, 0.25, 0.28]
 g_spec_color = [0.25, 0.25, 0.22]
+g_fog_color = [0.6, 0.6, 0.6]
+g_fog_density = 0.0055
+g_fog_height = 1.5
+g_fog_max = 1.3
 
 
 def make_squares():
@@ -114,7 +115,7 @@ def render_frame(width, height):
     specular_light = g_spec_color
 
     world_to_view = lu.make_lookAt(eye_pos, look_at, up_dir)
-    view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 200)
+    view_to_clip = lu.make_perspective(y_fov, width / height, 0.1, 260)
     world_to_clip = view_to_clip * world_to_view
     model_to_view_normal = lu.inverse(lu.transpose(lu.Mat3(world_to_view)))
 
@@ -148,6 +149,8 @@ def render_frame(width, height):
     glUniformMatrix3fv(norm_uniform_index, 1, GL_TRUE,
                        model_to_view_normal.getData())
 
+    lu.setUniform(g_shader, "camPos", eye_pos)
+
     # Add light 1 uniforms
     lu.setUniform(g_shader, "lightColourAndIntensity1", g_light_color_1)
     lu.setUniform(g_shader, "viewSpaceLightPosition1", g_light_1)
@@ -163,6 +166,12 @@ def render_frame(width, height):
 
     lu.setUniform(g_shader, "ambientLightColourAndIntensity", ambient_light)
     lu.setUniform(g_shader, "materialSpecular", specular_light)
+
+    # Fog settings
+    lu.setUniform(g_shader, "fogColor", g_fog_color)
+    lu.setUniform(g_shader, "fogDensityConst", g_fog_density)
+    lu.setUniform(g_shader, "fogHeightConst", g_fog_height)
+    lu.setUniform(g_shader, "fogMax", g_fog_max)
 
     glActiveTexture(GL_TEXTURE0)
     glBindTexture(GL_TEXTURE_2D, g_texture_id)
@@ -194,7 +203,6 @@ def init_resources():
 
 def init_glfw_and_resources(title, start_width, start_height):
     """ Adapted from lab5 `magic.py` """
-    global g_mousePos
 
     glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
     glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
@@ -279,7 +287,6 @@ def run_program(title, start_width, start_height):
 
     # Add in initial time/mouse pos
     current_time = glfw.get_time()
-    prev_mouse_x, prev_mouse_y = glfw.get_cursor_pos(window)
 
     # Create the MSAA FBO
     msaa_fbo = glGenFramebuffers(1)
@@ -324,7 +331,7 @@ def run_program(title, start_width, start_height):
 
         imgui.begin("Rubiks Cube Controls", 0)
 
-        draw_ui(width, height)
+        draw_ui()
 
         imgui.end()
         imgui.render()
@@ -355,7 +362,7 @@ def add_move_buttons(move_name, move_func, btn_w):
         move_func()
 
 
-def draw_ui(width, height):
+def draw_ui():
     """ Draws the imgui UI """
     global g_cube
     global g_cam
@@ -369,9 +376,17 @@ def draw_ui(width, height):
     global g_light_color_4
     global g_ambi_color
     global g_spec_color
+    global g_fog_color
+    global g_fog_density
+    global g_fog_height
+    global g_fog_max
 
     btn_w = 25
     imgui.set_window_font_scale(1.2)
+
+    _, g_cam = imgui.slider_float3(
+        "Camera Position", *g_cam, min_value=-20.0, max_value=150.0)
+    g_cam = list(g_cam)
 
     expanded, _ = imgui.collapsing_header("Controls", True)
     if expanded:
@@ -403,8 +418,6 @@ def draw_ui(width, height):
 
     expanded, _ = imgui.collapsing_header("View Settings", True)
     if expanded:
-        _, g_cam = imgui.slider_float3(
-            "Camera Position", *g_cam, min_value=-20.0, max_value=150.0)
         # Light 1
         expanded, _ = imgui.collapsing_header("Light 1", True)
         if expanded:
@@ -438,16 +451,27 @@ def draw_ui(width, height):
             g_light_4 = list(g_light_4)
             g_light_color_4 = list(g_light_color_4)
         # Other Light constants
-        _, g_ambi_color = imgui.color_edit3("Ambient Light Colour",
-                                            *g_ambi_color)
-        _, g_spec_color = imgui.color_edit3("Specular Light Colour",
-                                            *g_spec_color)
-        g_cam = list(g_cam)
-        g_ambi_color = list(g_ambi_color)
-        g_spec_color = list(g_spec_color)
+        expanded, _ = imgui.collapsing_header("Other Lighting", True)
+        if expanded:
+            _, g_ambi_color = imgui.color_edit3("Ambient Light Colour",
+                                                *g_ambi_color)
+            _, g_spec_color = imgui.color_edit3("Specular Light Colour",
+                                                *g_spec_color)
+            g_ambi_color = list(g_ambi_color)
+            g_spec_color = list(g_spec_color)
+        expanded, _ = imgui.collapsing_header("Fog Settings", True)
+        if expanded:
+            _, g_fog_color = imgui.color_edit3("Fog Colour", *g_fog_color)
+            g_fog_color = list(g_fog_color)
+            _, g_fog_density = imgui.input_float("Fog Density Coefficient",
+                                                 g_fog_density)
+            _, g_fog_height = imgui.input_float("Fog Height Coefficient",
+                                                g_fog_height)
+            _, g_fog_max = imgui.input_float("Max Fog", g_fog_max)
 
 
 def update(dt):
+    """ Updates the 'Game Logic' """
     global g_shader_reload_timeout
     global g_cube
     global g_cube_move
